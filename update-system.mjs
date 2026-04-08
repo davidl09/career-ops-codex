@@ -1,4 +1,4 @@
-#!/usr/bin/env node
+#!/usr/bin/env bun
 
 /**
  * update-system.mjs — Safe auto-updater for career-ops
@@ -7,10 +7,10 @@
  * NEVER touches user data (cv.md, profile.yml, _profile.md, data/, reports/).
  *
  * Usage:
- *   node update-system.mjs check      # Check if update available
- *   node update-system.mjs apply      # Apply update (after user confirms)
- *   node update-system.mjs rollback   # Rollback last update
- *   node update-system.mjs dismiss    # Dismiss update check
+ *   bun update-system.mjs check      # Check if update available
+ *   bun update-system.mjs apply      # Apply update (after user confirms)
+ *   bun update-system.mjs rollback   # Rollback last update
+ *   bun update-system.mjs dismiss    # Dismiss update check
  *
  * See DATA_CONTRACT.md for the full system/user layer definitions.
  */
@@ -45,7 +45,6 @@ const SYSTEM_PATHS = [
   'modes/tracker.md',
   'modes/training.md',
   'modes/de/',
-  'CLAUDE.md',
   'AGENTS.md',
   'generate-pdf.mjs',
   'merge-tracker.mjs',
@@ -59,12 +58,14 @@ const SYSTEM_PATHS = [
   'dashboard/',
   'templates/',
   'fonts/',
-  '.claude/skills/',
+  '.agents/skills/',
   'docs/',
   'VERSION',
   'DATA_CONTRACT.md',
   'CONTRIBUTING.md',
   'README.md',
+  'README.es.md',
+  'LEGAL_DISCLAIMER.md',
   'LICENSE',
   'CITATION.cff',
   '.github/',
@@ -220,9 +221,9 @@ async function apply() {
 
     // 5. Install any new dependencies
     try {
-      execSync('npm install --silent', { cwd: ROOT, timeout: 60000 });
+      execSync('bun install --silent', { cwd: ROOT, timeout: 60000 });
     } catch {
-      console.log('npm install skipped (may need manual run)');
+      console.log('bun install skipped (may need manual run)');
     }
 
     // 6. Commit the update
@@ -240,7 +241,7 @@ async function apply() {
 
     console.log(`\nUpdate complete: v${local} → v${remote}`);
     console.log(`Updated ${updated.length} system paths.`);
-    console.log(`Rollback available: node update-system.mjs rollback`);
+    console.log(`Rollback available: bun update-system.mjs rollback`);
 
   } finally {
     // Remove lock
@@ -290,7 +291,7 @@ function rollback() {
 
 function dismiss() {
   writeFileSync(join(ROOT, '.update-dismissed'), new Date().toISOString());
-  console.log('Update check dismissed. Run "node update-system.mjs check" or say "check for updates" to re-enable.');
+  console.log('Update check dismissed. Run "bun update-system.mjs check" or say "check for updates" to re-enable.');
 }
 
 // ── MAIN ────────────────────────────────────────────────────────
@@ -303,6 +304,6 @@ switch (cmd) {
   case 'rollback': rollback(); break;
   case 'dismiss': dismiss(); break;
   default:
-    console.log('Usage: node update-system.mjs [check|apply|rollback|dismiss]');
+    console.log('Usage: bun update-system.mjs [check|apply|rollback|dismiss]');
     process.exit(1);
 }

@@ -1,25 +1,25 @@
 # Modo: batch — Procesamiento Masivo de Ofertas
 
-Dos modos de uso: **conductor --chrome** (navega portales en tiempo real) o **standalone** (script para URLs ya recolectadas).
+Dos modos de uso: **conductor interactivo** (una sesion de Codex con herramientas de navegador cuando existan) o **standalone** (script para URLs ya recolectadas).
 
 ## Arquitectura
 
 ```
-Claude Conductor (claude --chrome --dangerously-skip-permissions)
+Codex conductor interactivo
   │
-  │  Chrome: navega portales (sesiones logueadas)
-  │  Lee DOM directo — el usuario ve todo en tiempo real
+  │  Navega portales o revisa resultados en tiempo real
+  │  El usuario ve y controla la sesion
   │
-  ├─ Oferta 1: lee JD del DOM + URL
-  │    └─► claude -p worker → report .md + PDF + tracker-line
+  ├─ Oferta 1: lee JD del DOM o de la URL
+  │    └─► codex exec worker → report .md + PDF + tracker-line
   │
-  ├─ Oferta 2: click siguiente, lee JD + URL
-  │    └─► claude -p worker → report .md + PDF + tracker-line
+  ├─ Oferta 2: siguiente oferta
+  │    └─► codex exec worker → report .md + PDF + tracker-line
   │
   └─ Fin: merge tracker-additions → applications.md + resumen
 ```
 
-Cada worker es un `claude -p` hijo con contexto limpio de 200K tokens. El conductor solo orquesta.
+Cada worker es un `codex exec` hijo con contexto limpio. El conductor solo orquesta.
 
 ## Archivos
 
@@ -33,26 +33,18 @@ batch/
   tracker-additions/            # Líneas de tracker (gitignored)
 ```
 
-## Modo A: Conductor --chrome
+## Modo A: Conductor interactivo
 
-1. **Leer estado**: `batch/batch-state.tsv` → saber qué ya se procesó
-2. **Navegar portal**: Chrome → URL de búsqueda
-3. **Extraer URLs**: Leer DOM de resultados → extraer lista de URLs → append a `batch-input.tsv`
-4. **Para cada URL pendiente**:
-   a. Chrome: click en la oferta → leer JD text del DOM
-   b. Guardar JD a `/tmp/batch-jd-{id}.txt`
-   c. Calcular siguiente REPORT_NUM secuencial
-   d. Ejecutar via Bash:
-      ```bash
-      claude -p --dangerously-skip-permissions \
-        --append-system-prompt-file batch/batch-prompt.md \
-        "Procesa esta oferta. URL: {url}. JD: /tmp/batch-jd-{id}.txt. Report: {num}. ID: {id}"
-      ```
-   e. Actualizar `batch-state.tsv` (completed/failed + score + report_num)
-   f. Log a `logs/{report_num}-{id}.log`
-   g. Chrome: volver atrás → siguiente oferta
-5. **Paginación**: Si no hay más ofertas → click "Next" → repetir
-6. **Fin**: Merge `tracker-additions/` → `applications.md` + resumen
+1. Leer `batch/batch-state.tsv` para saber qué ya se procesó.
+2. Navegar el portal en una sesion interactiva de Codex con navegador si el entorno lo permite.
+3. Extraer URLs y guardarlas en `batch-input.tsv`.
+4. Para cada URL pendiente:
+   - leer JD del DOM o guardarlo en `/tmp/batch-jd-{id}.txt`
+   - calcular el siguiente `REPORT_NUM`
+   - delegar a `batch/batch-runner.sh` o lanzar un worker equivalente con `codex exec`
+   - revisar `batch-state.tsv`, logs y tracker additions
+5. Paginacion: siguiente pagina, repetir.
+6. Fin: merge `tracker-additions/` a `applications.md` y resumir.
 
 ## Modo B: Script standalone
 
@@ -66,6 +58,8 @@ Opciones:
 - `--start-from N` — empieza desde ID N
 - `--parallel N` — N workers en paralelo
 - `--max-retries N` — intentos por oferta (default: 2)
+
+El runner usa `codex exec -C <repo> --full-auto --search -o <result-file> -`.
 
 ## Formato batch-state.tsv
 
@@ -82,23 +76,23 @@ id	url	status	started_at	completed_at	report_num	score	error	retries
 - Lock file (`batch-runner.pid`) previene ejecución doble
 - Cada worker es independiente: fallo en oferta #47 no afecta a las demás
 
-## Workers (claude -p)
+## Workers (`codex exec`)
 
-Cada worker recibe `batch-prompt.md` como system prompt. Es self-contained.
+Cada worker recibe `batch-prompt.md` con placeholders resueltos. Es self-contained.
 
 El worker produce:
 1. Report `.md` en `reports/`
 2. PDF en `output/`
 3. Línea de tracker en `batch/tracker-additions/{id}.tsv`
-4. JSON de resultado por stdout
+4. JSON final en la ultima respuesta del agente, capturado con `codex exec -o`
 
 ## Gestión de errores
 
 | Error | Recovery |
 |-------|----------|
-| URL inaccesible | Worker falla → conductor marca `failed`, siguiente |
+| URL inaccesible | Worker falla → runner marca `failed`, siguiente |
 | JD detrás de login | Conductor intenta leer DOM. Si falla → `failed` |
-| Portal cambia layout | Conductor razona sobre HTML, se adapta |
-| Worker crashea | Conductor marca `failed`, siguiente. Retry con `--retry-failed` |
+| Portal cambia layout | El conductor adapta el flujo o cae al modo standalone |
+| Worker crashea | Runner marca `failed`, siguiente. Retry con `--retry-failed` |
 | Conductor muere | Re-ejecutar → lee state → skip completadas |
 | PDF falla | Report .md se guarda. PDF queda pendiente |

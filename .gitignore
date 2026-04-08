@@ -31,8 +31,9 @@ node_modules/
 *.mov
 *.mp4
 
-# Claude Code local
+# Legacy local state
 .claude/settings.local.json
 .claude/memory/
 career-dashboard
 package-lock.json
+bun.lock

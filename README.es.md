@@ -13,10 +13,9 @@
 </p>
 
 <p align="center">
-  <img src="https://img.shields.io/badge/Claude_Code-000?style=flat&logo=anthropic&logoColor=white" alt="Claude Code">
+  <img src="https://img.shields.io/badge/OpenAI_Codex-111827?style=flat&logo=openai&logoColor=white" alt="OpenAI Codex">
   <img src="https://img.shields.io/badge/OpenCode-111827?style=flat&logo=terminal&logoColor=white" alt="OpenCode">
-  <img src="https://img.shields.io/badge/Codex_(pronto)-6B7280?style=flat&logo=openai&logoColor=white" alt="Codex">
-  <img src="https://img.shields.io/badge/Node.js-339933?style=flat&logo=node.js&logoColor=white" alt="Node.js">
+  <img src="https://img.shields.io/badge/Bun-000?style=flat&logo=bun&logoColor=F9F1E1" alt="Bun">
   <img src="https://img.shields.io/badge/Go-00ADD8?style=flat&logo=go&logoColor=white" alt="Go">
   <img src="https://img.shields.io/badge/Playwright-2EAD33?style=flat&logo=playwright&logoColor=white" alt="Playwright">
   <img src="https://img.shields.io/badge/License-MIT-blue.svg" alt="MIT">
@@ -65,7 +64,7 @@ Construido por alguien que lo uso para evaluar 740+ ofertas, generar 100+ CVs pe
 | **Scripts de negociacion** | Frameworks de negociacion salarial, pushback de descuentos geograficos, leverage de ofertas competidoras |
 | **PDFs ATS** | CVs con keywords inyectados, diseño Space Grotesk + DM Sans |
 | **Scanner de portales** | 45+ empresas pre-configuradas (Anthropic, OpenAI, ElevenLabs, Retool, n8n...) + queries en Ashby, Greenhouse, Lever, Wellfound |
-| **Batch** | Evaluacion en paralelo con workers `claude -p` |
+| **Batch** | Evaluacion en paralelo con workers `codex exec` |
 | **Dashboard TUI** | Terminal UI para navegar, filtrar y ordenar tu pipeline |
 | **Human-in-the-Loop** | La IA evalua y recomienda, tu decides y actuas. El sistema nunca envia una aplicacion -- tu siempre tienes la ultima palabra |
 | **Integridad de pipeline** | Merge automatico, dedup, normalizacion de estados, health checks |
@@ -75,11 +74,11 @@ Construido por alguien que lo uso para evaluar 740+ ofertas, generar 100+ CVs pe
 ```bash
 # 1. Clonar e instalar
 git clone https://github.com/santifer/career-ops.git
-cd career-ops && npm install
-npx playwright install chromium   # Necesario para generar PDFs
+cd career-ops && bun install
+bunx playwright install chromium   # Necesario para generar PDFs
 
 # 2. Verificar setup
-npm run doctor                     # Valida todos los prerequisitos
+bun run doctor                     # Valida todos los prerequisitos
 
 # 3. Configurar
 cp config/profile.example.yml config/profile.yml  # Editar con tus datos
@@ -88,10 +87,10 @@ cp templates/portals.example.yml portals.yml       # Personalizar empresas
 # 4. Añadir tu CV
 # Crear cv.md en la raiz del proyecto con tu CV en markdown
 
-# 5. Personalizar con Claude
-claude   # Abrir Claude Code en este directorio
+# 5. Personalizar con Codex
+codex   # Abrir Codex en este directorio
 
-# Pidele a Claude que adapte el sistema a ti:
+# Pidele a Codex que adapte el sistema a ti:
 # "Cambia los arquetipos a roles de backend"
 # "Traduce los modes a ingles"
 # "Añade estas empresas a portals.yml"
@@ -101,7 +100,7 @@ claude   # Abrir Claude Code en este directorio
 # Pega una URL de oferta o ejecuta /career-ops
 ```
 
-> **El sistema esta diseñado para que Claude lo personalice.** Modes, arquetipos, scoring, scripts de negociacion -- solo pidelo. Claude lee los mismos archivos que usa, asi que sabe exactamente que editar.
+> **El sistema esta diseñado para que Codex lo personalice.** Modes, arquetipos, scoring y scripts de negociacion se editan in-place. Codex lee los mismos archivos que usa, asi que sabe exactamente que tocar.
 
 Guia completa en [docs/SETUP.md](docs/SETUP.md).
 
@@ -177,7 +176,7 @@ Features: 6 pestañas de filtro, 4 modos de ordenacion, vista agrupada/plana, pr
 
 ```
 career-ops/
-├── CLAUDE.md                    # Instrucciones del agente
+├── AGENTS.md                    # Instrucciones del agente
 ├── cv.md                        # Tu CV (crealo tu)
 ├── article-digest.md            # Tus proof points (opcional)
 ├── config/
@@ -207,13 +206,13 @@ career-ops/
 
 ## Tech Stack
 
-![Claude Code](https://img.shields.io/badge/Claude_Code-000?style=flat&logo=anthropic&logoColor=white)
-![Node.js](https://img.shields.io/badge/Node.js-339933?style=flat&logo=node.js&logoColor=white)
+![OpenAI Codex](https://img.shields.io/badge/OpenAI_Codex-111827?style=flat&logo=openai&logoColor=white)
+![Bun](https://img.shields.io/badge/Bun-000?style=flat&logo=bun&logoColor=F9F1E1)
 ![Playwright](https://img.shields.io/badge/Playwright-2EAD33?style=flat&logo=playwright&logoColor=white)
 ![Go](https://img.shields.io/badge/Go-00ADD8?style=flat&logo=go&logoColor=white)
 ![Bubble Tea](https://img.shields.io/badge/Bubble_Tea-FF75B5?style=flat&logo=go&logoColor=white)
 
-- **Agente**: Claude Code con skills y modos personalizados
+- **Agente**: OpenAI Codex con skills y modos personalizados
 - **PDF**: Playwright/Puppeteer + template HTML
 - **Scanner**: Playwright + Greenhouse API + WebSearch
 - **Dashboard**: Go + Bubble Tea + Lipgloss (tema Catppuccin Mocha)

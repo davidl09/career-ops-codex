@@ -1,4 +1,4 @@
-#!/usr/bin/env node
+#!/usr/bin/env bun
 /**
  * verify-pipeline.mjs — Health check for career-ops pipeline integrity
  *
@@ -11,7 +11,7 @@
  * 6. No pending TSVs in tracker-additions/ (only in merged/ or archived/)
  * 7. states.yml canonical IDs for cross-system consistency
  *
- * Run: node career-ops/verify-pipeline.mjs
+ * Run: bun verify-pipeline.mjs
  */
 
 import { readFileSync, readdirSync, existsSync } from 'fs';

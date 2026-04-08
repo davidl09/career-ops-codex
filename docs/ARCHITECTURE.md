@@ -4,8 +4,8 @@
 
 ```
                     ┌─────────────────────────────────┐
-                    │         Claude Code Agent        │
-                    │   (reads CLAUDE.md + modes/*.md) │
+                    │          Codex Agent             │
+                    │   (reads AGENTS.md + modes/*.md) │
                     └──────────┬──────────────────────┘
                                │
             ┌──────────────────┼──────────────────────┐
@@ -17,14 +17,14 @@
             │                  │                       │
             │           ┌──────▼──────┐          ┌────▼─────┐
             │           │ pipeline.md │          │ N workers│
-            │           │ (URL inbox) │          │ (claude -p)
+            │           │ (URL inbox) │          │ (codex exec)
             │           └─────────────┘          └────┬─────┘
             │                                          │
      ┌──────▼──────────────────────────────────────────▼──────┐
      │                    Output Pipeline                      │
      │  ┌──────────┐  ┌────────────┐  ┌───────────────────┐  │
      │  │ Report.md│  │  PDF (HTML  │  │ Tracker TSV       │  │
-     │  │ (A-F eval)│  │  → Puppeteer)│  │ (merge-tracker)  │  │
+     │  │ (A-F eval)│  │  → Playwright)│  │ (merge-tracker)  │  │
      │  └──────────┘  └────────────┘  └───────────────────┘  │
      └────────────────────────────────────────────────────────┘
                                │
@@ -56,17 +56,18 @@
 The batch system processes multiple offers in parallel:
 
 ```
-batch-input.tsv    →  batch-runner.sh  →  N × claude -p workers
+batch-input.tsv    →  batch-runner.sh  →  N × codex exec workers
 (id, url, source)     (orchestrator)       (self-contained prompt)
                            │
                     batch-state.tsv
                     (tracks progress)
 ```
 
-Each worker is a headless Claude instance (`claude -p`) that receives the full `batch-prompt.md` as context. Workers produce:
+Each worker is a headless Codex run (`codex exec`) that receives the full `batch-prompt.md` with placeholders resolved. Workers produce:
 - Report .md
 - PDF
 - Tracker TSV line
+- Final JSON status payload
 
 The orchestrator manages parallelism, state, retries, and resume.
 

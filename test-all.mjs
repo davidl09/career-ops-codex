@@ -1,4 +1,4 @@
-#!/usr/bin/env node
+#!/usr/bin/env bun
 
 /**
  * test-all.mjs — Comprehensive test suite for career-ops
@@ -7,8 +7,8 @@
  * Tests: syntax, scripts, dashboard, data contract, personal data, paths.
  *
  * Usage:
- *   node test-all.mjs           # Run all tests
- *   node test-all.mjs --quick   # Skip dashboard build (faster)
+ *   bun test-all.mjs           # Run all tests
+ *   bun test-all.mjs --quick   # Skip dashboard build (faster)
  */
 
 import { execSync } from 'child_process';
@@ -47,7 +47,8 @@ console.log('1. Syntax checks');
 
 const mjsFiles = readdirSync(ROOT).filter(f => f.endsWith('.mjs'));
 for (const f of mjsFiles) {
-  const result = run(`node --check ${f}`);
+  const out = `/tmp/career-ops-syntax-${f.replace(/[^a-zA-Z0-9_.-]/g, '_')}`;
+  const result = run(`bun build --no-bundle --target=node --outfile ${out} ${f}`);
   if (result !== null) {
     pass(`${f} syntax OK`);
   } else {
@@ -69,7 +70,7 @@ const scripts = [
 ];
 
 for (const { name, allowFail } of scripts) {
-  const result = run(`node ${name} 2>&1`);
+  const result = run(`bun ${name} 2>&1`);
   if (result !== null) {
     pass(`${name} runs OK`);
   } else if (allowFail) {
@@ -99,11 +100,11 @@ console.log('\n4. Data contract validation');
 
 // Check system files exist
 const systemFiles = [
-  'CLAUDE.md', 'VERSION', 'DATA_CONTRACT.md',
+  'AGENTS.md', 'VERSION', 'DATA_CONTRACT.md',
   'modes/_shared.md', 'modes/_profile.template.md',
   'modes/oferta.md', 'modes/pdf.md', 'modes/scan.md',
   'templates/states.yml', 'templates/cv-template.html',
-  '.claude/skills/career-ops/SKILL.md',
+  '.agents/skills/career-ops/SKILL.md',
 ];
 
 for (const f of systemFiles) {
@@ -141,7 +142,7 @@ const leakPatterns = [
 const scanExtensions = ['md', 'yml', 'html', 'mjs', 'sh', 'go', 'json'];
 const excludeDirs = ['node_modules', '.git', 'dashboard/go.sum'];
 const allowedFiles = ['README.md', 'LICENSE', 'CITATION.cff', 'CONTRIBUTING.md',
-  'package.json', '.github/FUNDING.yml', 'CLAUDE.md', 'go.mod', 'test-all.mjs'];
+  'package.json', '.github/FUNDING.yml', 'AGENTS.md', 'go.mod', 'test-all.mjs'];
 
 let leakFound = false;
 for (const pattern of leakPatterns) {
@@ -167,7 +168,7 @@ if (!leakFound) {
 console.log('\n6. Absolute path check');
 
 const absPathResult = run(
-  `grep -rn "/Users/" --include="*.mjs" --include="*.sh" --include="*.md" --include="*.go" --include="*.yml" . 2>/dev/null | grep -v node_modules | grep -v ".git/" | grep -v README.md | grep -v LICENSE | grep -v go.sum | grep -v CLAUDE.md | grep -v test-all.mjs`
+  `grep -rn "/Users/" --include="*.mjs" --include="*.sh" --include="*.md" --include="*.go" --include="*.yml" . 2>/dev/null | grep -v node_modules | grep -v ".git/" | grep -v README.md | grep -v LICENSE | grep -v go.sum | grep -v AGENTS.md | grep -v test-all.mjs`
 );
 if (!absPathResult) {
   pass('No absolute paths in code files');
@@ -203,11 +204,11 @@ if (shared.includes('_profile.md')) {
   fail('_shared.md does NOT reference _profile.md');
 }
 
-// ── 8. CLAUDE.md INTEGRITY ──────────────────────────────────────
+// ── 8. AGENTS.md INTEGRITY ──────────────────────────────────────
 
-console.log('\n8. CLAUDE.md integrity');
+console.log('\n8. AGENTS.md integrity');
 
-const claude = readFile('CLAUDE.md');
+const agents = readFile('AGENTS.md');
 const requiredSections = [
   'Data Contract', 'Update Check', 'Ethical Use',
   'Offer Verification', 'Canonical States', 'TSV Format',
@@ -215,10 +216,10 @@ const requiredSections = [
 ];
 
 for (const section of requiredSections) {
-  if (claude.includes(section)) {
-    pass(`CLAUDE.md has section: ${section}`);
+  if (agents.includes(section)) {
+    pass(`AGENTS.md has section: ${section}`);
   } else {
-    fail(`CLAUDE.md missing section: ${section}`);
+    fail(`AGENTS.md missing section: ${section}`);
   }
 }
 

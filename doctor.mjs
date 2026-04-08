@@ -1,4 +1,4 @@
-#!/usr/bin/env node
+#!/usr/bin/env bun
 
 /**
  * doctor.mjs — Setup validation for career-ops
@@ -6,6 +6,7 @@
  */
 
 import { existsSync, mkdirSync, readdirSync } from 'fs';
+import { execSync } from 'child_process';
 import { join, dirname } from 'path';
 import { fileURLToPath } from 'url';
 
@@ -18,16 +19,35 @@ const green = (s) => isTTY ? `\x1b[32m${s}\x1b[0m` : s;
 const red = (s) => isTTY ? `\x1b[31m${s}\x1b[0m` : s;
 const dim = (s) => isTTY ? `\x1b[2m${s}\x1b[0m` : s;
 
-function checkNodeVersion() {
-  const major = parseInt(process.versions.node.split('.')[0]);
-  if (major >= 18) {
-    return { pass: true, label: `Node.js >= 18 (v${process.versions.node})` };
+function checkBunVersion() {
+  const version = process.versions.bun || Bun.version;
+  const major = parseInt(version.split('.')[0], 10);
+  if (major >= 1) {
+    return { pass: true, label: `Bun >= 1.0 (v${version})` };
   }
   return {
     pass: false,
-    label: `Node.js >= 18 (found v${process.versions.node})`,
-    fix: 'Install Node.js 18 or later from https://nodejs.org',
+    label: `Bun >= 1.0 (found v${version})`,
+    fix: 'Install Bun from https://bun.sh',
   };
+}
+
+function checkCodex() {
+  try {
+    const version = execSync('codex --version', {
+      cwd: projectRoot,
+      encoding: 'utf-8',
+      stdio: ['ignore', 'pipe', 'ignore'],
+      timeout: 10000,
+    }).trim();
+    return { pass: true, label: `Codex CLI installed (${version})` };
+  } catch {
+    return {
+      pass: false,
+      label: 'Codex CLI not found',
+      fix: 'Install and authenticate the Codex CLI, then run `codex` in this directory',
+    };
+  }
 }
 
 function checkDependencies() {
@@ -37,7 +57,7 @@ function checkDependencies() {
   return {
     pass: false,
     label: 'Dependencies not installed',
-    fix: 'Run: npm install',
+    fix: 'Run: bun install',
   };
 }
 
@@ -51,13 +71,13 @@ async function checkPlaywright() {
     return {
       pass: false,
       label: 'Playwright chromium not installed',
-      fix: 'Run: npx playwright install chromium',
+      fix: 'Run: bunx playwright install chromium',
     };
   } catch {
     return {
       pass: false,
       label: 'Playwright chromium not installed',
-      fix: 'Run: npx playwright install chromium',
+      fix: 'Run: bunx playwright install chromium',
     };
   }
 }
@@ -154,7 +174,8 @@ async function main() {
   console.log('================\n');
 
   const checks = [
-    checkNodeVersion(),
+    checkBunVersion(),
+    checkCodex(),
     checkDependencies(),
     await checkPlaywright(),
     checkCv(),
@@ -183,10 +204,10 @@ async function main() {
 
   console.log('');
   if (failures > 0) {
-    console.log(`Result: ${failures} issue${failures === 1 ? '' : 's'} found. Fix them and run \`npm run doctor\` again.`);
+    console.log(`Result: ${failures} issue${failures === 1 ? '' : 's'} found. Fix them and run \`bun run doctor\` again.`);
     process.exit(1);
   } else {
-    console.log('Result: All checks passed. You\'re ready to go! Run `claude` to start.');
+    console.log('Result: All checks passed. You\'re ready to go! Run `codex` to start.');
     process.exit(0);
   }
 }

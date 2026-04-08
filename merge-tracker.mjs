@@ -1,4 +1,4 @@
-#!/usr/bin/env node
+#!/usr/bin/env bun
 /**
  * merge-tracker.mjs — Merge batch tracker additions into applications.md
  *
@@ -11,7 +11,7 @@
  * If duplicate with higher score → update in-place, update report link
  * Validates status against states.yml (rejects non-canonical, logs warning)
  *
- * Run: node career-ops/merge-tracker.mjs [--dry-run] [--verify]
+ * Run: bun merge-tracker.mjs [--dry-run] [--verify]
  */
 
 import { readFileSync, writeFileSync, readdirSync, mkdirSync, renameSync, existsSync } from 'fs';
@@ -324,7 +324,7 @@ if (VERIFY && !DRY_RUN) {
   console.log('\n--- Running verification ---');
   const { execSync } = await import('child_process');
   try {
-    execSync(`node ${join(CAREER_OPS, 'verify-pipeline.mjs')}`, { stdio: 'inherit' });
+    execSync(`bun ${join(CAREER_OPS, 'verify-pipeline.mjs')}`, { stdio: 'inherit' });
   } catch (e) {
     process.exit(1);
   }

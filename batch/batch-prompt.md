@@ -212,7 +212,7 @@ Donde `{company-slug}` es el nombre de empresa en lowercase, sin espacios, con g
 12. Escribe HTML a `/tmp/cv-candidate-{company-slug}.html`
 13. Ejecuta:
 ```bash
-node generate-pdf.mjs \
+bun generate-pdf.mjs \
   /tmp/cv-candidate-{company-slug}.html \
   output/cv-candidate-{company-slug}-{{DATE}}.pdf \
   --format={letter|a4}
@@ -304,7 +304,7 @@ Donde `{next_num}` se calcula leyendo la última línea de `data/applications.md
 
 ### Paso 6 — Output final
 
-Al terminar, imprime por stdout un resumen JSON para que el orquestador lo parsee:
+La respuesta final del worker debe ser exactamente un objeto JSON valido, sin markdown, sin code fences y sin texto adicional antes o despues. `codex exec -o` capturara esa respuesta para que el orquestador la parsee:
 
 ```json
 {
@@ -355,3 +355,4 @@ Si algo falla:
 5. Generar contenido en el idioma del JD (EN default)
 6. Ser directo y accionable — sin fluff
 7. Cuando generes texto en inglés (PDF summaries, bullets, STAR stories), usa inglés nativo de tech: frases cortas, verbos de acción, sin passive voice innecesaria, sin "in order to" ni "utilized"
+8. La respuesta final del worker debe ser solo el JSON requerido en el Paso 6

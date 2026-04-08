@@ -12,7 +12,8 @@ license: MIT
 keywords:
   - ai
   - job-search
-  - claude-code
+  - codex
+  - bun
   - career
   - automation
   - llmops

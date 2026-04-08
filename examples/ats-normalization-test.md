@@ -32,10 +32,10 @@ The normalizer does NOT fix writing style. These are enforced by the rules in `m
 
 ```bash
 # From the project root, after editing generate-pdf.mjs:
-node --check generate-pdf.mjs
+bun generate-pdf.mjs --help
 
 # Quick smoke test of the normalizer logic (no Playwright needed):
-node -e "
+bun -e "
 import('./generate-pdf.mjs').catch(()=>{});
 " 2>/dev/null || true
 ```
@@ -43,7 +43,7 @@ import('./generate-pdf.mjs').catch(()=>{});
 For an end-to-end test, generate a CV PDF from a known dirty HTML file and inspect the output:
 
 ```bash
-node generate-pdf.mjs /tmp/dirty-cv.html /tmp/clean-cv.pdf --format=a4
+bun generate-pdf.mjs /tmp/dirty-cv.html /tmp/clean-cv.pdf --format=a4
 # Expected log line:
 # 🧹 ATS normalization: N replacements (em-dash=X, smart-double-quote=Y, ...)
 ```

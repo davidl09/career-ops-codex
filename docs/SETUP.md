@@ -2,8 +2,8 @@
 
 ## Prerequisites
 
-- [Claude Code](https://claude.ai/code) installed and configured
-- Node.js 18+ (for PDF generation and utility scripts)
+- Codex CLI installed and configured
+- Bun 1.0+ (for PDF generation and utility scripts)
 - (Optional) Go 1.21+ (for the dashboard TUI)
 
 ## Quick Start (5 steps)
@@ -13,8 +13,8 @@
 ```bash
 git clone https://github.com/santifer/career-ops.git
 cd career-ops
-npm install
-npx playwright install chromium   # Required for PDF generation
+bun install
+bunx playwright install chromium   # Required for PDF generation
 ```
 
 ### 2. Configure your profile
@@ -44,10 +44,10 @@ Edit `portals.yml`:
 
 ### 5. Start using
 
-Open Claude Code in this directory:
+Open Codex in this directory:
 
 ```bash
-claude
+codex
 ```
 
 Then paste a job offer URL or description. Career-ops will automatically evaluate it, generate a report, create a tailored PDF, and track it.
@@ -67,8 +67,8 @@ Then paste a job offer URL or description. Career-ops will automatically evaluat
 ## Verify Setup
 
 ```bash
-node cv-sync-check.mjs      # Check configuration
-node verify-pipeline.mjs     # Check pipeline integrity
+bun cv-sync-check.mjs       # Check configuration
+bun verify-pipeline.mjs     # Check pipeline integrity
 ```
 
 ## Build Dashboard (Optional)

@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-# career-ops batch runner — standalone orchestrator for claude -p workers
-# Reads batch-input.tsv, delegates each offer to a claude -p worker,
+# career-ops batch runner — standalone orchestrator for codex exec workers
+# Reads batch-input.tsv, delegates each offer to a codex exec worker,
 # tracks state in batch-state.tsv for resumability.
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -28,8 +28,8 @@ MAX_RETRIES=2
 
 usage() {
   cat <<'USAGE'
-career-ops batch runner — process job offers in batch via claude -p workers
-Uses your default Claude model (Claude Max subscription).
+career-ops batch runner — process job offers in batch via codex exec workers
+Uses Codex non-interactively via `codex exec`.
 
 Usage: batch-runner.sh [OPTIONS]
 
@@ -105,6 +105,10 @@ trap release_lock EXIT
 # Validate prerequisites
 check_prerequisites() {
   if [[ ! -f "$INPUT_FILE" ]]; then
+    if [[ "$DRY_RUN" == "true" ]]; then
+      echo "No $INPUT_FILE found. Nothing to preview yet."
+      exit 0
+    fi
     echo "ERROR: $INPUT_FILE not found. Add offers first."
     exit 1
   fi
@@ -114,8 +118,13 @@ check_prerequisites() {
     exit 1
   fi
 
-  if ! command -v claude &>/dev/null; then
-    echo "ERROR: 'claude' CLI not found in PATH."
+  if ! command -v codex &>/dev/null; then
+    echo "ERROR: 'codex' CLI not found in PATH."
+    exit 1
+  fi
+
+  if ! command -v bun &>/dev/null; then
+    echo "ERROR: 'bun' CLI not found in PATH."
     exit 1
   fi
 
@@ -269,6 +278,22 @@ reserve_report_num() {
   printf '%s\n' "$report_num"
 }
 
+json_field() {
+  local file="$1"
+  local field="$2"
+
+  bun -e 'const [, file, field] = process.argv;
+const data = JSON.parse(await Bun.file(file).text());
+const value = data[field];
+if (value === undefined || value === null) process.exit(1);
+console.log(typeof value === "string" ? value : String(value));' \
+    "$file" "$field"
+}
+
+sanitize_message() {
+  printf '%s' "$1" | tr '\n\r\t' '   ' | sed 's/  */ /g' | cut -c1-200
+}
+
 # Process a single offer
 process_offer() {
   local id="$1" url="$2" source="$3" notes="$4"
@@ -285,16 +310,8 @@ process_offer() {
 
   echo "--- Processing offer #$id: $url (report $report_num, attempt $((retries + 1)))"
 
-  # Build the prompt with placeholders replaced
-  local prompt
-  prompt="Procesa esta oferta de empleo. Ejecuta el pipeline completo: evaluación A-F + report .md + PDF + tracker line."
-  prompt="$prompt URL: $url"
-  prompt="$prompt JD file: $jd_file"
-  prompt="$prompt Report number: $report_num"
-  prompt="$prompt Date: $date"
-  prompt="$prompt Batch ID: $id"
-
   local log_file="$LOGS_DIR/${report_num}-${id}.log"
+  local result_file="$LOGS_DIR/${report_num}-${id}.result.json"
 
   # Prepare system prompt with placeholders resolved
   local resolved_prompt="$BATCH_DIR/.resolved-prompt-${id}.md"
@@ -306,12 +323,15 @@ process_offer() {
     -e "s|{{ID}}|${id}|g" \
     "$PROMPT_FILE" > "$resolved_prompt"
 
-  # Launch claude -p worker (uses default model from Claude Max subscription)
+  # Launch codex exec worker and capture the final assistant message separately.
   local exit_code=0
-  claude -p \
-    --dangerously-skip-permissions \
-    --append-system-prompt-file "$resolved_prompt" \
-    "$prompt" \
+  codex exec \
+    -C "$PROJECT_DIR" \
+    --full-auto \
+    --search \
+    -o "$result_file" \
+    - \
+    < "$resolved_prompt" \
     > "$log_file" 2>&1 || exit_code=$?
 
   # Cleanup resolved prompt
@@ -320,21 +340,36 @@ process_offer() {
   local completed_at
   completed_at=$(date -u +%Y-%m-%dT%H:%M:%SZ)
 
-  if [[ $exit_code -eq 0 ]]; then
-    # Try to extract score from worker output
-    local score="-"
-    local score_match
-    score_match=$(grep -oP '"score":\s*[\d.]+' "$log_file" 2>/dev/null | head -1 | grep -oP '[\d.]+' || true)
-    if [[ -n "$score_match" ]]; then
-      score="$score_match"
+  if [[ $exit_code -eq 0 && -f "$result_file" ]]; then
+    local worker_status
+    if ! worker_status=$(json_field "$result_file" "status" 2>/dev/null); then
+      worker_status="failed"
     fi
 
-    update_state "$id" "$url" "completed" "$started_at" "$completed_at" "$report_num" "$score" "-" "$retries"
-    echo "    ✅ Completed (score: $score, report: $report_num)"
+    if [[ "$worker_status" == "completed" ]]; then
+      local score="-"
+      local score_value
+      if score_value=$(json_field "$result_file" "score" 2>/dev/null); then
+        score="$score_value"
+      fi
+
+      update_state "$id" "$url" "completed" "$started_at" "$completed_at" "$report_num" "$score" "-" "$retries"
+      echo "    ✅ Completed (score: $score, report: $report_num)"
+    else
+      retries=$((retries + 1))
+      local error_msg
+      if ! error_msg=$(json_field "$result_file" "error" 2>/dev/null); then
+        error_msg="Worker returned failed status without an error message"
+      fi
+      error_msg=$(sanitize_message "$error_msg")
+      update_state "$id" "$url" "failed" "$started_at" "$completed_at" "$report_num" "-" "$error_msg" "$retries"
+      echo "    ❌ Failed (attempt $retries, worker status: $worker_status)"
+    fi
   else
     retries=$((retries + 1))
     local error_msg
-    error_msg=$(tail -5 "$log_file" 2>/dev/null | tr '\n' ' ' | cut -c1-200 || echo "Unknown error (exit code $exit_code)")
+    error_msg=$(tail -5 "$log_file" 2>/dev/null || echo "Unknown error (exit code $exit_code)")
+    error_msg=$(sanitize_message "$error_msg")
     update_state "$id" "$url" "failed" "$started_at" "$completed_at" "$report_num" "-" "$error_msg" "$retries"
     echo "    ❌ Failed (attempt $retries, exit code $exit_code)"
   fi
@@ -344,10 +379,10 @@ process_offer() {
 merge_tracker() {
   echo ""
   echo "=== Merging tracker additions ==="
-  node "$PROJECT_DIR/merge-tracker.mjs"
+  bun "$PROJECT_DIR/merge-tracker.mjs"
   echo ""
   echo "=== Verifying pipeline integrity ==="
-  node "$PROJECT_DIR/verify-pipeline.mjs" || echo "⚠️  Verification found issues (see above)"
+  bun "$PROJECT_DIR/verify-pipeline.mjs" || echo "⚠️  Verification found issues (see above)"
 }
 
 # Print summary

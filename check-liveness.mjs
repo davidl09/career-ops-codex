@@ -1,15 +1,15 @@
-#!/usr/bin/env node
+#!/usr/bin/env bun
 
 /**
  * check-liveness.mjs — Playwright job link liveness checker
  *
  * Tests whether job posting URLs are still active or have expired.
  * Uses the same detection logic as scan.md step 7.5.
- * Zero Claude API tokens — pure Playwright.
+ * Zero model API tokens — pure Playwright.
  *
  * Usage:
- *   node check-liveness.mjs <url1> [url2] ...
- *   node check-liveness.mjs --file urls.txt
+ *   bun check-liveness.mjs <url1> [url2] ...
+ *   bun check-liveness.mjs --file urls.txt
  *
  * Exit code: 0 if all active, 1 if any expired or uncertain
  */
@@ -103,8 +103,8 @@ async function main() {
   const args = process.argv.slice(2);
 
   if (args.length === 0) {
-    console.error('Usage: node check-liveness.mjs <url1> [url2] ...');
-    console.error('       node check-liveness.mjs --file urls.txt');
+    console.error('Usage: bun check-liveness.mjs <url1> [url2] ...');
+    console.error('       bun check-liveness.mjs --file urls.txt');
     process.exit(1);
   }
 

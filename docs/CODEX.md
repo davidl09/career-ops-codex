@@ -1,24 +1,24 @@
 # Codex Setup
 
-Career-Ops supports Codex through the root `AGENTS.md` file.
+Career-Ops is designed to run through the root `AGENTS.md` file and the
+canonical `.agents/skills/career-ops/SKILL.md` router.
 
-If your Codex client reads project instructions automatically, `AGENTS.md`
-is enough for routing and behavior. Codex should reuse the same checked-in
-mode files, templates, tracker flow, and scripts that already power the
-Claude workflow.
+If your Codex client reads project instructions automatically, `AGENTS.md` is
+the only agent contract you need. Codex should reuse the checked-in mode
+files, templates, tracker flow, and scripts directly.
 
 ## Prerequisites
 
 - A Codex client that can work with project `AGENTS.md`
-- Node.js 18+
+- Bun 1.0+
 - Playwright Chromium installed for PDF generation and reliable job verification
 - Go 1.21+ if you want the TUI dashboard
 
 ## Install
 
 ```bash
-npm install
-npx playwright install chromium
+bun install
+bunx playwright install chromium
 ```
 
 ## Recommended Starting Prompts
@@ -43,9 +43,9 @@ npx playwright install chromium
 | Training / certification review | `modes/training.md` |
 | Project evaluation | `modes/project.md` |
 
-The key point: Codex support is additive. It should route into the existing
-Career-Ops modes and scripts rather than introducing a parallel automation
-layer.
+The key point: Codex is the supported runtime. It should route into the
+existing Career-Ops modes and scripts rather than introducing a parallel
+automation layer.
 
 ## Behavioral Rules
 
@@ -58,7 +58,10 @@ layer.
 ## Verification
 
 ```bash
-npm run verify
+bun run verify
+
+# full validator
+bun run test:all --quick
 
 # optional dashboard build
 cd dashboard && go build ./...
